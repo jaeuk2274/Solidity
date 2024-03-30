@@ -1,0 +1,19 @@
+{
+  "name": "Uk Chart #0002",
+  "image": "ipfs://QmYZ3PvD7xVze8ufovNpFDeqGAZWNutCsP5QyRPwTtzd3c/2",
+  "description": "This is Uk Chart #2.",
+  "attributes": [
+    {
+      "trait_type": "Solidity",
+      "value": "Fluent"
+    },
+    {
+      "trait_type": "Color",
+      "value": "Brown"
+    },
+    {
+      "trait_type": "Age",
+      "value": 1
+    }
+  ]
+}
