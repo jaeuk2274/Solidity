@@ -7,12 +7,11 @@ contract MyFirstToken {
     uint public decimals = 18;
     uint public totalSupply = 0;
 
-    mapping(address owner => uint amout) public balances;
+    mapping (address owner => uint amout) public balances;
     mapping (address owner => mapping(address spender => uint)) public allowances;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-
 
     function balanceOf(address owner) public view returns (uint amount) {
         return balances[owner];
