@@ -26,30 +26,67 @@ contract Excange is ERC20 {
     }
     
     function removeLiquidity(uint lpTokenAmount) public {
-        // LP token burn
+        // 1. (지분율) = (lpTokenAmount) / (전체 발행된 lpTokenAmount)
+        //uint lpShares = lpTokenAmount / balanceOf(address(this));
         _burn(msg.sender, lpTokenAmount);
-        uint etherAmount = lpTokenAmount;
-        uint tokenAmount = lpTokenAmount;
-        // LP 지분만큼 ether, token 반환
+
+        // 2. 총 Ether 개수 * 지분율
+        uint etherAmount = address(this).balance * lpTokenAmount / balanceOf(address(this));
+
+        // 3. 총 Token 개수 * 지분율
+        ERC20 token = ERC20(tokenAddress);
+        uint tokenAmount = token.balanceOf(address(this)) * lpTokenAmount / balanceOf(address(this));
+
         payable(msg.sender).transfer(etherAmount);
-        TokenA tokenContract = TokenA(tokenAddress);
-        tokenContract.transfer(msg.sender, tokenAmount);
+        token.transfer(msg.sender, tokenAmount);
     }
 
-    function etherToTokenSwap() public payable {
-        // 1:1 으로 가정 ex.Token A = WETH
+    // Price Discovery Function
+    // (X, Y), (x, y)
+    // (1000, 1500), (100, y) ?
+    // (1000, 1500), (x, 100) ?
+    function getInputPrice (
+        uint inputAmount,
+        uint, //inputReserve,
+        uint //outputReserve
+    ) public pure returns (uint outputAmount) {
+        return inputAmount * 997/1000;
+    }
+
+    function getOutputPrice (
+        uint outputAmount,
+        uint, //inputReserve,
+        uint //outputReserve
+    ) public pure returns (uint inputAmount) {
+        return outputAmount / 997/1000;
+    }
+
+    function etherToTokenInput(uint minTokens) public payable {
         uint etherAmount = msg.value;
-        uint tokenAmount = etherAmount;
-        TokenA tokenContract = TokenA(tokenAddress);
-        tokenContract.transfer(msg.sender, tokenAmount);
+        ERC20 token = ERC20(tokenAddress);
+
+        uint tokenAmount = getInputPrice(
+            etherAmount,
+            address(this).balance - msg.value,
+            token.balanceOf(address(this))
+        );
+
+        require(tokenAmount >= minTokens); // dapp 에서의 mev 방지      
+        token.transfer(msg.sender, tokenAmount);
     }
 
-    function tokenToEtherSwap(uint tokenAmount) public {
-        // Approve() 는 별도 tx 이미 진행 가정
-        TokenA tokenContract = TokenA(tokenAddress);
-        tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
-        uint etherAmount = tokenAmount;
-        payable(msg.sender).transfer(etherAmount);
+    function etherToTokenoutput(uint tokenAmount, uint maxEtherAmount) public payable {
+        uint etherAmount = tokenAmount / 997 * 1000;
+        // uint etherAmount = getInputAmount();
+
+        require(maxEtherAmount >= etherAmount); // dapp 에서의 mev 방지
+        require(msg.value >= etherAmount);
+        uint etherRefundAmount = msg.value - etherAmount;
+        if(etherRefundAmount > 0) {
+            payable(msg.sender).transfer(etherRefundAmount);
+        }
+        ERC20 token = ERC20(tokenAddress);
+        token.transfer(msg.sender, tokenAmount);
     }
 }
 
@@ -65,4 +102,11 @@ Uniswap V3
     Protocol Fee : 1/x(4<=x<=10)
     slot0-feeProtocol
 
- */
+AMM
+DEX : AMM(LP, SWAP), OrderBook(Taker/Maker)
+
+Fee, Ratio -> Input/Output
+Fee : Swap/Taker Fee <> Protocol Fee
+https://gov.uniswap.org/
+
+*/
